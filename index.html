@@ -52,7 +52,6 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   html { -webkit-text-size-adjust: 100%; }
 
   body {
@@ -119,12 +118,9 @@
   }
 
   .bolt {
-    width: 44px;
-    height: 44px;
+    width: 44px; height: 44px;
     border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     font-size: 22px;
     color: #06110d;
     background: linear-gradient(135deg, var(--accent), #baffdf);
@@ -189,6 +185,87 @@
   .settings-grid .field { margin-bottom: 0; }
   .settings-grid input[type="number"] { height: 43px; font-size: 14px; }
 
+  /* MSC block */
+  .msc-block {
+    margin-top: 18px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: rgba(0,183,255,0.055);
+    border: 1px solid rgba(0,183,255,0.16);
+  }
+
+  .msc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .msc-title {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent2);
+    font-family: var(--mono);
+  }
+
+  .pill-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .pill-status {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--muted2);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .pill {
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    background: var(--border);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.22s ease;
+    border: none;
+    flex-shrink: 0;
+  }
+
+  .pill.on { background: var(--accent); box-shadow: 0 0 14px rgba(0,229,160,0.35); }
+
+  .pill-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.22s ease;
+    pointer-events: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  }
+
+  .pill.on .pill-knob { left: 21px; }
+
+  .msc-input { margin-top: 0; }
+  .msc-input input[type="number"] { height: 43px; font-size: 14px; }
+
+  .msc-note {
+    margin-top: 7px;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--muted2);
+    letter-spacing: 0.3px;
+  }
+
   @media (max-width: 430px) {
     body { align-items: flex-start; }
     .card { border-radius: 18px; }
@@ -242,6 +319,24 @@
       <div class="divider" aria-hidden="true"><span>RESULT</span></div>
       <div id="output" aria-live="polite"></div>
 
+      <!-- Monthly Service Charge — always visible -->
+      <div class="msc-block">
+        <div class="msc-header">
+          <span class="msc-title">Monthly Service Charge</span>
+          <div class="pill-wrap" id="mscPillWrap" role="button" aria-label="Toggle monthly service charge" tabindex="0">
+            <span class="pill-status" id="mscStatus">Off</span>
+            <span class="pill" id="mscPill" aria-pressed="false">
+              <span class="pill-knob"></span>
+            </span>
+          </div>
+        </div>
+        <div class="msc-input input-wrap">
+          <span class="prefix" aria-hidden="true">R</span>
+          <input type="number" id="msc-amount" inputmode="decimal" min="0" max="10000" value="79.41" step="0.01" autocomplete="off" placeholder="79.41" />
+        </div>
+        <div class="msc-note" id="mscNote">excl. VAT &middot; not included in calculation</div>
+      </div>
+
       <div class="settings-toggle">
         <button id="settingsToggle" type="button" aria-expanded="false" aria-controls="settings">&#x2699; adjust rates</button>
       </div>
@@ -250,7 +345,7 @@
         <div class="settings-grid">
           <div class="field">
             <label for="rate">Rate excl. VAT</label>
-            <div class="input-wrap"><span class="prefix" aria-hidden="true">R</span><input type="number" id="rate" inputmode="decimal" min="0.0001" max="1000" value="3.5667" step="0.0001" autocomplete="off" /></div>
+            <div class="input-wrap"><span class="prefix" aria-hidden="true">R</span><input type="number" id="rate" inputmode="decimal" min="0.0001" max="1000" value="3.6760" step="0.0001" autocomplete="off" /></div>
           </div>
           <div class="field">
             <label for="vend-fee">Vend Fee</label>
@@ -274,7 +369,7 @@
   'use strict';
 
   const VAT_RATE = 0.15;
-  const DEFAULTS = Object.freeze({ rate: 3.5667, vendFee: 23.91, channelFee: 27.97, discount: 27.97 });
+  const DEFAULTS = Object.freeze({ rate: 3.6760, vendFee: 23.91, channelFee: 27.97, discount: 27.97, mscAmount: 79.41 });
   const STORAGE_KEYS = Object.freeze({ theme: 'unitCalculatorTheme', settings: 'unitCalculatorSettings' });
 
   const $ = (id) => document.getElementById(id);
@@ -288,6 +383,11 @@
     vendFee: $('vend-fee'),
     channelFee: $('channel-fee'),
     discount: $('discount'),
+    mscAmount: $('msc-amount'),
+    mscPill: $('mscPill'),
+    mscPillWrap: $('mscPillWrap'),
+    mscStatus: $('mscStatus'),
+    mscNote: $('mscNote'),
     settings: $('settings'),
     settingsToggle: $('settingsToggle'),
     darkBtn: $('darkBtn'),
@@ -297,6 +397,7 @@
   };
 
   let mode = 'rands';
+  let mscOn = false;
 
   function safeNumber(value, fallback, min, max) {
     const number = Number.parseFloat(value);
@@ -334,13 +435,17 @@
       vendFee: safeNumber(elements.vendFee.value, DEFAULTS.vendFee, 0, 10000),
       channelFee: safeNumber(elements.channelFee.value, DEFAULTS.channelFee, 0, 10000),
       discount: safeNumber(elements.discount.value, DEFAULTS.discount, 0, 10000),
+      msc: mscOn ? safeNumber(elements.mscAmount.value, DEFAULTS.mscAmount, 0, 10000) : 0,
       vat: VAT_RATE
     };
   }
 
   function saveSettings() {
     try {
-      localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(getSettings()));
+      const s = getSettings();
+      s.mscAmount = safeNumber(elements.mscAmount.value, DEFAULTS.mscAmount, 0, 10000);
+      s.mscOn = mscOn;
+      localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(s));
     } catch (_) {}
   }
 
@@ -352,6 +457,8 @@
         elements.vendFee.value = safeNumber(stored.vendFee, DEFAULTS.vendFee, 0, 10000).toString();
         elements.channelFee.value = safeNumber(stored.channelFee, DEFAULTS.channelFee, 0, 10000).toString();
         elements.discount.value = safeNumber(stored.discount, DEFAULTS.discount, 0, 10000).toString();
+        elements.mscAmount.value = safeNumber(stored.mscAmount, DEFAULTS.mscAmount, 0, 10000).toString();
+        if (stored.mscOn) setMsc(true);
       }
     } catch (_) {}
   }
@@ -375,6 +482,17 @@
     calc();
   }
 
+  function setMsc(on) {
+    mscOn = on;
+    elements.mscPill.classList.toggle('on', mscOn);
+    elements.mscPill.setAttribute('aria-pressed', String(mscOn));
+    elements.mscStatus.textContent = mscOn ? 'On' : 'Off';
+    elements.mscNote.textContent = mscOn
+      ? 'excl. VAT \u00B7 included in calculation'
+      : 'excl. VAT \u00B7 not included in calculation';
+    calc();
+  }
+
   function addBreakdownRow(parent, label, value, valueClass) {
     const row = div('breakdown-row');
     row.appendChild(span('bk-label', label));
@@ -393,7 +511,6 @@
     labelWrap.appendChild(div('result-sub', mode === 'rands' ? 'Estimated prepaid electricity' : 'Estimated VAT inclusive total'));
     resultMain.appendChild(labelWrap);
 
-    // Units mode shows a rands value (blue), rands mode shows kWh value (green)
     const valueEl = div(mode === 'units' ? 'result-value rands' : 'result-value');
     valueEl.textContent = mode === 'rands' ? units(data.units) + ' kWh' : 'R ' + money(data.totalIncl);
     resultMain.appendChild(valueEl);
@@ -403,6 +520,9 @@
     addBreakdownRow(breakdown, '\uD83D\uDCB0 Vend fee excl. VAT', 'R ' + money(data.settings.vendFee), 'neg');
     addBreakdownRow(breakdown, '\uD83D\uDCB3 Channel fee excl. VAT', 'R ' + money(data.settings.channelFee), 'neg');
     addBreakdownRow(breakdown, '\u2705 Discount excl. VAT', '-R ' + money(data.settings.discount), 'pos');
+    if (mscOn && data.settings.msc > 0) {
+      addBreakdownRow(breakdown, '\uD83D\uDDD3 Monthly service charge', 'R ' + money(data.settings.msc), 'neg');
+    }
     addBreakdownRow(breakdown, 'VAT 15%', 'R ' + money(data.totalVat), 'neg');
 
     const totalRow = div('breakdown-row total-row');
@@ -419,7 +539,7 @@
 
   function calc() {
     const settings = getSettings();
-    const netFeeExcl = settings.vendFee + settings.channelFee - settings.discount;
+    const netFeeExcl = settings.vendFee + settings.channelFee - settings.discount + settings.msc;
 
     if (netFeeExcl < 0) {
       showMessage('error-state', 'Discount cannot be higher than vend fee plus channel fee.');
@@ -477,7 +597,12 @@
     elements.unitsModeBtn.addEventListener('click', () => setMode('units'));
     elements.settingsToggle.addEventListener('click', toggleSettings);
 
-    [elements.randsInput, elements.unitsInput, elements.rate, elements.vendFee, elements.channelFee, elements.discount].forEach((input) => {
+    elements.mscPillWrap.addEventListener('click', () => setMsc(!mscOn));
+    elements.mscPillWrap.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMsc(!mscOn); }
+    });
+
+    [elements.randsInput, elements.unitsInput, elements.rate, elements.vendFee, elements.channelFee, elements.discount, elements.mscAmount].forEach((input) => {
       input.addEventListener('input', calc);
       input.addEventListener('change', calc);
     });
